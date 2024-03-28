@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Docker
+apt-get update
+
+apt-get install -y apache2
+
+service apache2 start
+
+echo "Hello Holberton" > /var/www/html/index.html
+
+exit
