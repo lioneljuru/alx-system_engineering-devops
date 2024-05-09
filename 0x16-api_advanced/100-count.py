@@ -13,43 +13,26 @@ def count_words(subreddit, word_list, instances={}, after="", count=0):
         after (str): The parameter for the next page of the API results.
         count (int): The parameter of results matched thus far.
     """
-    url = "https://www.reddit.com/r/{}/hot/.json".format(subreddit)
-    headers = {
-        "User-Agent": "linux:0x16.api.advanced:v1.0.0 (by /u/bdov_)"
-    }
-    params = {
-        "after": after,
-        "count": count,
-        "limit": 100
-    }
+    word_list = set([word.lower() for word in word_list])
+    url = "https://www.reddit.com/r/{}/hot.json".format(subreddit)
+    headers = {"user-agent": "shdh"}
+    params = {"after": after}
     response = requests.get(url, headers=headers, params=params,
                             allow_redirects=False)
-    try:
-        results = response.json()
-        if response.status_code == 404:
-            raise Exception
-    except Exception:
-        print("")
-        return
+    if response.status_code != 20:
+        return None
 
-    results = results.get("data")
-    after = results.get("after")
-    count += results.get("dist")
-    for c in results.get("children"):
-        title = c.get("data").get("title").lower().split()
+    data = response.json().get("data")
+    for child in data.get("children"):
+        title_words = child.get("data").get("title").lower().split()
         for word in word_list:
-            if word.lower() in title:
-                times = len([t for t in title if t == word.lower()])
-                if instances.get(word) is None:
-                    instances[word] = times
-                else:
-                    instances[word] += times
+            dic[word] = dic.get(word, 0) + title_words.count(word)
+    after = data.get("after")
 
-    if after is None:
-        if len(instances) == 0:
-            print("")
-            return
-        instances = sorted(instances.items(), key=lambda kv: (-kv[1], kv[0]))
-        [print("{}: {}".format(k, v)) for k, v in instances]
+    if after:
+        count_words(subreddit, word_list, after, dic)
     else:
-        count_words(subreddit, word_list, instances, after, count)
+        word_list.sort(key=lambda x: dic.get(x), reverse=True)
+        for word in word_list:
+            if dic.get(word):
+                print("{}: {}".format(word, dic.get(word)))
